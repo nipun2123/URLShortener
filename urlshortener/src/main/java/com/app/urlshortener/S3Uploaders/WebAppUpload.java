@@ -1,5 +1,6 @@
 package com.app.urlshortener.S3Uploaders;
 
+import org.springframework.beans.factory.annotation.Value;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -9,13 +10,14 @@ import java.nio.file.Paths;
 
 public class WebAppUpload {
 
-    private static final String BUCKET_NAME = "url-shortener-app";
-    private static final String LOCAL_FOLDER_PATH = "C:/path-to-your-build-folder/";
+    private static final String BUCKET_NAME = "shortify-app";
+    private static final String LOCAL_FOLDER_PATH = "E:\\Projects\\AWS tutorials\\Shorten Url Project\\urlshortener\\urlshortener\\src\\main\\resources\\static\\";
 
     public static void main(String[] args) {
         S3Client s3 = S3Client.create();
 
         File folder = new File(LOCAL_FOLDER_PATH);
+        System.out.println(folder.exists());
         if (folder.exists() && folder.isDirectory()) {
             for (File file : folder.listFiles()) {
                 uploadFile(s3, file);

@@ -1,0 +1,199 @@
+---
+Metadata:
+  AWSToolsMetrics:
+    IaC_Generator: "arn:aws:cloudformation:eu-west-2:203918856231:generatedTemplate/5fead034-0240-49e2-b900-183b7427008c"
+Parameters:
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeS3ObjectVersion61Tow:
+    NoEcho: "true"
+    Type: "String"
+    Description: "For versioned objects, the version of the deployment package object\
+      \ to use."
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeS3BucketNLZaL:
+    NoEcho: "true"
+    Type: "String"
+    Description: "An Amazon S3 bucket in the same AWS-Region as your function. The\
+      \ bucket can be in a different AWS-account."
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeZipFilegUCwJ:
+    NoEcho: "true"
+    Type: "String"
+    Description: "(Node.js and Python) The source code of your Lambda function. If\
+      \ you include your function source inline with this parameter, CFN places it\
+      \ in a file named ``index`` and zips it to create a [deployment package](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-package.html).\
+      \ This zip file cannot exceed 4MB. For the ``Handler`` property, the first part\
+      \ of the handler identifier must be ``index``. For example, ``index.handler``.\n\
+      \  For JSON, you must escape quotes and special characters such as newline (``\\\
+      n``) with a backslash.\n If you specify a function that interacts with an AWS\
+      \ CloudFormation custom resource, you don't have to write your own functions\
+      \ to send responses to the custom resource that invoked the function. AWS CloudFormation\
+      \ provides a response module ([cfn-response](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html))\
+      \ that simplifies sending responses. See [Using Lambda with CloudFormation](https://docs.aws.amazon.com/lambda/latest/dg/services-cloudformation.html)\
+      \ for details."
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeS3Key4F2yD:
+    NoEcho: "true"
+    Type: "String"
+    Description: "The Amazon S3 key of the deployment package."
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeImageUrigIrME:
+    NoEcho: "true"
+    Type: "String"
+    Description: "URI of a [container image](https://docs.aws.amazon.com/lambda/latest/dg/lambda-images.html)\
+      \ in the Amazon ECR registry."
+  LambdaFunction00ShortifyAppLambda00VQXKsCodeSourceKMSKeyArn7hHfO:
+    NoEcho: "true"
+    Type: "String"
+    Description: "Value of write only property Code/SourceKMSKeyArn of resource LambdaFunction00ShortifyAppLambda00VQXKs."
+Resources:
+  ApiGatewayStage00dev00afwxm:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::Stage"
+    DeletionPolicy: "Delete"
+    Properties:
+      RestApiId:
+        Ref: "ApiGatewayRestApi00zy4bs26iwi00HbHN3"
+      DeploymentId:
+        Fn::GetAtt:
+        - "ApiGatewayDeployment00wb63gu00rnGnh"
+        - "DeploymentId"
+      StageName: "dev"
+      TracingEnabled: false
+      CacheClusterEnabled: false
+  S3Bucket00shortifyapp00VbDMJ:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Delete"
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+        ErrorDocument: "error.html"
+      PublicAccessBlockConfiguration:
+        RestrictPublicBuckets: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        BlockPublicAcls: false
+      BucketName: "shortify-app"
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: "BucketOwnerEnforced"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: false
+          ServerSideEncryptionByDefault:
+            SSEAlgorithm: "AES256"
+  LambdaFunction00ShortifyAppLambda00VQXKs:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::Lambda::Function"
+    DeletionPolicy: "Delete"
+    Properties:
+      MemorySize: 128
+      Description: ""
+      TracingConfig:
+        Mode: "PassThrough"
+      Timeout: 3
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: "Auto"
+      Handler: "com.app.urlshortener.LambdaHandler.UrlShortenerHandler::handleRequest"
+      Code:
+        SourceKMSKeyArn:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeSourceKMSKeyArn7hHfO"
+        S3ObjectVersion:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeS3ObjectVersion61Tow"
+        S3Bucket:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeS3BucketNLZaL"
+        ZipFile:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeZipFilegUCwJ"
+        ImageUri:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeImageUrigIrME"
+        S3Key:
+          Ref: "LambdaFunction00ShortifyAppLambda00VQXKsCodeS3Key4F2yD"
+      Role:
+        Fn::GetAtt:
+        - "IAMRole00urlshortenerlambda00dkJUf"
+        - "Arn"
+      FileSystemConfigs: []
+      FunctionName: "ShortifyAppLambda"
+      Runtime: "java11"
+      PackageType: "Zip"
+      LoggingConfig:
+        LogFormat: "Text"
+        LogGroup: "/aws/lambda/ShortifyAppLambda"
+      RecursiveLoop: "Terminate"
+      EphemeralStorage:
+        Size: 512
+      Architectures:
+      - "x86_64"
+  DynamoDBTable00shortifyapp00DaJfV:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::DynamoDB::Table"
+    DeletionPolicy: "Delete"
+    Properties:
+      SSESpecification:
+        SSEEnabled: false
+      TableName: "shortify-app"
+      AttributeDefinitions:
+      - AttributeType: "S"
+        AttributeName: "short_id"
+      ContributorInsightsSpecification:
+        Enabled: false
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: false
+      KeySchema:
+      - KeyType: "HASH"
+        AttributeName: "short_id"
+      WarmThroughput:
+        ReadUnitsPerSecond: 12000
+        WriteUnitsPerSecond: 4000
+      DeletionProtectionEnabled: false
+      Tags: []
+      TimeToLiveSpecification:
+        Enabled: false
+  ApiGatewayRestApi00zy4bs26iwi00HbHN3:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::RestApi"
+    DeletionPolicy: "Delete"
+    Properties:
+      ApiKeySourceType: "HEADER"
+      Description: "API Gateway for Shortify App"
+      EndpointConfiguration:
+        Types:
+        - "EDGE"
+      DisableExecuteApiEndpoint: false
+      Name: "ShortifyAppAPI"
+  S3BucketPolicy00shortifyapp00YPwcb:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::S3::BucketPolicy"
+    DeletionPolicy: "Delete"
+    Properties:
+      Bucket:
+        Ref: "S3Bucket00shortifyapp00VbDMJ"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: "arn:aws:s3:::shortify-app/*"
+          Action: "s3:GetObject"
+          Effect: "Allow"
+          Principal: "*"
+  IAMRole00urlshortenerlambda00dkJUf:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::IAM::Role"
+    DeletionPolicy: "Delete"
+    Properties:
+      Path: "/"
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+      MaxSessionDuration: 3600
+      RoleName: "url_shortener_lambda"
+      Description: "Allows Lambda functions to call AWS services on your behalf."
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Action: "sts:AssumeRole"
+          Effect: "Allow"
+          Principal:
+            Service: "lambda.amazonaws.com"
+  ApiGatewayDeployment00wb63gu00rnGnh:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::Deployment"
+    DeletionPolicy: "Delete"
+    Properties:
+      RestApiId:
+        Ref: "ApiGatewayRestApi00zy4bs26iwi00HbHN3"

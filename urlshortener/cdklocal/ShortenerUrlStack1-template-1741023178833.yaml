@@ -1,0 +1,74 @@
+---
+Metadata:
+  AWSToolsMetrics:
+    IaC_Generator: "arn:aws:cloudformation:eu-west-2:203918856231:generatedTemplate/315e52b8-5ae5-4209-a1c1-12c74c639b87"
+Resources:
+  ApiGatewayDeployment00wb63gu00jRDH1:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::Deployment"
+    DeletionPolicy: "Delete"
+    Properties:
+      RestApiId:
+        Ref: "ApiGatewayRestApi00zy4bs26iwi00rwogG"
+  ApiGatewayRestApi00zy4bs26iwi00rwogG:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::RestApi"
+    DeletionPolicy: "Delete"
+    Properties:
+      ApiKeySourceType: "HEADER"
+      Description: "API Gateway for Shortify App"
+      EndpointConfiguration:
+        Types:
+        - "EDGE"
+      DisableExecuteApiEndpoint: false
+      Name: "ShortifyAppAPI"
+  S3Bucket00shortifyapp003ns9I:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: "Delete"
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: "index.html"
+        ErrorDocument: "error.html"
+      PublicAccessBlockConfiguration:
+        RestrictPublicBuckets: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        BlockPublicAcls: false
+      BucketName: "shortify-app"
+      OwnershipControls:
+        Rules:
+        - ObjectOwnership: "BucketOwnerEnforced"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - BucketKeyEnabled: false
+          ServerSideEncryptionByDefault:
+            SSEAlgorithm: "AES256"
+  ApiGatewayStage00dev002tGcV:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::ApiGateway::Stage"
+    DeletionPolicy: "Delete"
+    Properties:
+      RestApiId:
+        Ref: "ApiGatewayRestApi00zy4bs26iwi00rwogG"
+      DeploymentId:
+        Fn::GetAtt:
+        - "ApiGatewayDeployment00wb63gu00jRDH1"
+        - "DeploymentId"
+      StageName: "dev"
+      TracingEnabled: false
+      CacheClusterEnabled: false
+  S3BucketPolicy00shortifyapp00CYX6C:
+    UpdateReplacePolicy: "Delete"
+    Type: "AWS::S3::BucketPolicy"
+    DeletionPolicy: "Delete"
+    Properties:
+      Bucket:
+        Ref: "S3Bucket00shortifyapp003ns9I"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Resource: "arn:aws:s3:::shortify-app/*"
+          Action: "s3:GetObject"
+          Effect: "Allow"
+          Principal: "*"

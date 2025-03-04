@@ -5,7 +5,7 @@ import software.amazon.awssdk.services.dynamodb.model.*;
 
 public class DynamoDBSetup {
 
-    private static final String TABLE_NAME = "url_shortener";
+    private static final String TABLE_NAME = "shortify-app";
 
     public static void main(String[] args) {
         DynamoDbClient dynamoDb = DynamoDbClient.create();
