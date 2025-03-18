@@ -2,6 +2,9 @@ package com.app.urlshortener.LambdaHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.google.gson.Gson;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.sync.RedisCommands;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
@@ -19,7 +22,9 @@ import java.util.Random;
 
 public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, Object> {
 
-    private static final String TABLE_NAME = "shortify-app";
+    private static final String TABLE_NAME = System.getenv("DYNAMODB_TABLE");
+    private static final String REDIS_ENDPOINT = "sho-sh-1d27hzrcbo9fl.mnfcle.0001.euw2.cache.amazonaws.com";
+    private static final int REDIS_PORT = 6379;
     private static final DynamoDbClient dynamoDb = DynamoDbClient.create();
     private static final Gson gson = new Gson();
 
@@ -30,9 +35,11 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
         context.getLogger().log("Method is : " + event.get("httpMethod"));
         context.getLogger().log("Body is : " + event.get("body"));
 
-        String httpMethod = (String) event.get("httpMethod");
+        // Create empty response
         Map<String, Object> response = new HashMap<>();
         Map<String, String> body = gson.fromJson((String) event.get("body"), Map.class);
+
+        String httpMethod = (String) event.get("httpMethod");
         if (httpMethod.equalsIgnoreCase("post")) {
             if (body.containsKey("longUrl")) {
                 context.getLogger().log("Original Url is : " + body.get("longUrl"));
@@ -44,6 +51,7 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
                 if(getItemResponse(shortCode).hasItem()){
 
                     shortCode = handleCollision(shortCode);
+                    context.getLogger().log("Collision handled : " + shortCode);
                 }
 
                 Map<String, AttributeValue> item = Map.of(
@@ -58,6 +66,8 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
                         .tableName(TABLE_NAME)
                         .item(item)
                         .build());
+
+                context.getLogger().log("Short code saved : " + shortCode);
 
                 response.put("statusCode", 201);
                 response.put("body", gson.toJson(Map.of("short_url", shortCode)));
@@ -75,23 +85,47 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
 
                     context.getLogger().log("Short code is : " + shortCode);
 
-                    GetItemResponse item = getItemResponse(shortCode);
+                    // Initialize Redis client and connection
+                    RedisClient redisClient = RedisClient.create("redis://" + REDIS_ENDPOINT + ":" + REDIS_PORT);
+                    StatefulRedisConnection<String, String> connection = redisClient.connect();
+                    RedisCommands<String, String> syncCommands = connection.sync();
 
-                    if (item.hasItem()) {
-                        context.getLogger().log("Long url is : " + item.item().get("long_url").s());
-                        response.put("statusCode", 302);
-                        response.put("headers", Map.of("Location", item.item().get("long_url").s()));
+                    // Try to get the original URL from Redis cache
+                    String longUrl = syncCommands.get(shortCode);
 
-                        context.getLogger().log("Done!");
-                        return response;
-                    } else {
-                        context.getLogger().log("Short URL not found");
-                        response.put("statusCode", 404);
-                        response.put("body", gson.toJson(Map.of("error", "Short URL not found")));
+                    context.getLogger().log("Long URL in cache : " +longUrl);
+                    if (longUrl == null) {
+                        context.getLogger().log("Long URL not found in Cache");
 
-                        context.getLogger().log("Done!");
-                        return response;
+                        GetItemResponse item = getItemResponse(shortCode);
+                        if (item.hasItem()) {
+                            longUrl = item.item().get("long_url").s();
+                            context.getLogger().log("LongUrl from DB : " +longUrl);
+                            syncCommands.setex(shortCode, 3600, longUrl); // Store with 1-hour TTL
+                            context.getLogger().log("LongUrl saved in the Redis!");
+
+                        } else {
+                            context.getLogger().log("Short URL not found  in the DB");
+                            response.put("statusCode", 404);
+                            response.put("body", gson.toJson(Map.of("error", "Short URL not found")));
+
+                            context.getLogger().log("Done!");
+                            return response;
+                        }
                     }
+
+                    // Close Redis connection
+                    connection.close();
+                    redisClient.shutdown();
+
+                    context.getLogger().log("Long url is : " + longUrl);
+                    response.put("statusCode", 302);
+                    response.put("headers", Map.of("Location", longUrl));
+
+                    context.getLogger().log("Done!");
+                    return response;
+
+
                 }
             }
 
