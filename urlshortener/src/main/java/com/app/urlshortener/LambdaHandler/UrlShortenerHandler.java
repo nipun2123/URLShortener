@@ -10,11 +10,9 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
-
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,66 +21,68 @@ import java.util.Random;
 public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, Object> {
 
     private static final String TABLE_NAME = System.getenv("DYNAMODB_TABLE");
-    private static final String REDIS_ENDPOINT = "sho-sh-1d27hzrcbo9fl.mnfcle.0001.euw2.cache.amazonaws.com";
-    private static final int REDIS_PORT = 6379;
+    private static final String REDIS_ENDPOINT = System.getenv("REDIS_ENDPOINT");
+    private static final int REDIS_PORT = Integer.parseInt(System.getenv("REDIS_PORT"));;
+    private static final String BASE62_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final int BASE = 62;
     private static final DynamoDbClient dynamoDb = DynamoDbClient.create();
     private static final Gson gson = new Gson();
 
     @Override
     public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
-
         context.getLogger().log("Key Set is : " + event.keySet());
         context.getLogger().log("Method is : " + event.get("httpMethod"));
         context.getLogger().log("Body is : " + event.get("body"));
 
-        // Create empty response
-        Map<String, Object> response = new HashMap<>();
+        // Get the request body
         Map<String, String> body = gson.fromJson((String) event.get("body"), Map.class);
 
+        // Get the http method of request
         String httpMethod = (String) event.get("httpMethod");
+        Map<String, Object> response = new HashMap<>();
+
         if (httpMethod.equalsIgnoreCase("post")) {
+
             if (body.containsKey("longUrl")) {
                 context.getLogger().log("Original Url is : " + body.get("longUrl"));
+
+                // Get the original URL from the request body
                 String originalUrl = body.get("longUrl");
+                // Generate the short code using orginal URL
                 String shortCode = generateShortHash(originalUrl);
 
                 context.getLogger().log("Short code is : " + shortCode);
-
+                // Check the short code exits if yes handle collision
                 if(getItemResponse(shortCode).hasItem()){
-
                     shortCode = handleCollision(shortCode);
                     context.getLogger().log("Collision handled : " + shortCode);
                 }
 
+                // Save the data in dynamodb table
                 Map<String, AttributeValue> item = Map.of(
                         "short_id", AttributeValue.builder().s(shortCode).build(),
                         "long_url", AttributeValue.builder().s(originalUrl).build(),
                         "created_at", AttributeValue.builder().s(new Date().toString()).build()
                 );
-
-
-
                 dynamoDb.putItem(PutItemRequest.builder()
                         .tableName(TABLE_NAME)
                         .item(item)
                         .build());
 
-                context.getLogger().log("Short code saved : " + shortCode);
-
+                context.getLogger().log("Short code saved! : " + shortCode);
                 response.put("statusCode", 201);
                 response.put("body", gson.toJson(Map.of("short_url", shortCode)));
-
                 context.getLogger().log("Done!");
                 return response;
             }
-            } else if (httpMethod.equalsIgnoreCase("get")) {
 
-            context.getLogger().log("Path Parameters are : " + event.get("pathParameters"));
+        } else if (httpMethod.equalsIgnoreCase("get")) {
             Map<String, String> pathParameters = (Map<String, String>) event.get("pathParameters");
             context.getLogger().log("Path Parameters are : " + pathParameters);
-                if (pathParameters.containsKey("shortCode")) {
-                    String shortCode = pathParameters.get("shortCode");
 
+                if (pathParameters.containsKey("shortCode")) {
+                    // Get the short code from the request path parameter
+                    String shortCode = pathParameters.get("shortCode");
                     context.getLogger().log("Short code is : " + shortCode);
 
                     // Initialize Redis client and connection
@@ -92,16 +92,19 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
 
                     // Try to get the original URL from Redis cache
                     String longUrl = syncCommands.get(shortCode);
-
                     context.getLogger().log("Long URL in cache : " +longUrl);
+
+                    // If the long URL not in the cache, retrieve from the DB
                     if (longUrl == null) {
                         context.getLogger().log("Long URL not found in Cache");
 
+                        // Try to get the original URL from DynamoDB
                         GetItemResponse item = getItemResponse(shortCode);
                         if (item.hasItem()) {
                             longUrl = item.item().get("long_url").s();
                             context.getLogger().log("LongUrl from DB : " +longUrl);
-                            syncCommands.setex(shortCode, 3600, longUrl); // Store with 1-hour TTL
+                            // Store in the Redis with 1-hour TTL
+                            syncCommands.setex(shortCode, 3600, longUrl);
                             context.getLogger().log("LongUrl saved in the Redis!");
 
                         } else {
@@ -118,16 +121,13 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
                     connection.close();
                     redisClient.shutdown();
 
-                    context.getLogger().log("Long url is : " + longUrl);
                     response.put("statusCode", 302);
                     response.put("headers", Map.of("Location", longUrl));
 
                     context.getLogger().log("Done!");
                     return response;
-
-
                 }
-            }
+        }
 
         context.getLogger().log("Invalid request!");
         response.put("statusCode", 400);
@@ -136,33 +136,15 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
         context.getLogger().log("Done!");
         return response;
 
+    }
 
-        }
-
+    // Get Long URL from the DynamoDB
     private static GetItemResponse getItemResponse(String shortCode) {
         return dynamoDb.getItem(GetItemRequest.builder()
                 .tableName(TABLE_NAME)
                 .key(Map.of("short_id", AttributeValue.builder().s(shortCode).build()))
                 .build());
     }
-
-
-
-
-    private String generateShortCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        Random random = new Random();
-        StringBuilder shortCode = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            shortCode.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return shortCode.toString();
-    }
-
-
-
-    private static final String BASE62_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final int BASE = 62;
 
     // Generate SHA-256 Hash and Extract First 8 Bytes
     public static String generateShortHash(String url) {
@@ -193,7 +175,7 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
         return sb.reverse().toString();
     }
 
-    // Simulating Collision Handling by Adding a Random Character
+    // Handling collision by Adding a Random Character
     public static String handleCollision(String shortCode) {
         Random rand = new Random();
         return shortCode + BASE62_ALPHABET.charAt(rand.nextInt(BASE));
