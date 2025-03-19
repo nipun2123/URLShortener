@@ -22,7 +22,7 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
 
     private static final String TABLE_NAME = System.getenv("DYNAMODB_TABLE");
     private static final String REDIS_ENDPOINT = System.getenv("REDIS_ENDPOINT");
-    private static final int REDIS_PORT = Integer.parseInt(System.getenv("REDIS_PORT"));;
+    private static final int REDIS_PORT = Integer.parseInt(System.getenv("REDIS_PORT"));
     private static final String BASE62_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final int BASE = 62;
     private static final DynamoDbClient dynamoDb = DynamoDbClient.create();
@@ -52,11 +52,11 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
                 String shortCode = generateShortHash(originalUrl);
 
                 context.getLogger().log("Short code is : " + shortCode);
-                // Check the short code exits if yes handle collision
-                if(getItemResponse(shortCode).hasItem()){
-                    shortCode = handleCollision(shortCode);
-                    context.getLogger().log("Collision handled : " + shortCode);
-                }
+
+                // Check the short code exits if not save in the DB
+                GetItemResponse itemResponse = getItemResponse(shortCode);
+                if(!itemResponse.hasItem()){
+                context.getLogger().log("Short code is not in the DB");
 
                 // Save the data in dynamodb table
                 Map<String, AttributeValue> item = Map.of(
@@ -68,8 +68,8 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
                         .tableName(TABLE_NAME)
                         .item(item)
                         .build());
-
                 context.getLogger().log("Short code saved! : " + shortCode);
+                }
                 response.put("statusCode", 201);
                 response.put("body", gson.toJson(Map.of("short_url", shortCode)));
                 context.getLogger().log("Done!");
@@ -152,9 +152,9 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(url.getBytes());
 
-            // Extract first 8 bytes (16 hex characters)
+            // Extract first 5 bytes (10 hex characters)
             StringBuilder hexString = new StringBuilder();
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 5; i++) {
                 hexString.append(String.format("%02x", hash[i]));
             }
 
@@ -173,11 +173,5 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
             num = num.divide(BigInteger.valueOf(BASE));
         }
         return sb.reverse().toString();
-    }
-
-    // Handling collision by Adding a Random Character
-    public static String handleCollision(String shortCode) {
-        Random rand = new Random();
-        return shortCode + BASE62_ALPHABET.charAt(rand.nextInt(BASE));
     }
 }
