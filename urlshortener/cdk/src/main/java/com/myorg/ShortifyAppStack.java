@@ -35,7 +35,7 @@ public class ShortifyAppStack extends Stack {
         this(scope, id, null);
     }
 
-    private static final String PATH_FOR_JAR = "E:/Projects/AWS tutorials/Shorten Url Project/urlshortener/urlshortener/src/main/resources/static/";
+    private static final String PATH_FOR_HTML = "E:/Projects/AWS tutorials/Shorten Url Project/urlshortener/urlshortener/src/main/resources/static/";
 
     public ShortifyAppStack(final Construct scope, final String id, final StackProps props) {
         super(scope, id, props);
@@ -58,7 +58,7 @@ public class ShortifyAppStack extends Stack {
 
         // Upload a file to the bucket
         BucketDeployment.Builder.create(this, "DeployFile")
-                .sources(List.of(Source.asset(PATH_FOR_JAR))) // Path to your file
+                .sources(List.of(Source.asset(PATH_FOR_HTML))) // Path to your file
                 .destinationBucket(s3ShortifyBucket)
                 .build();
 

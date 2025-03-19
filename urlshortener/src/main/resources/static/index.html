@@ -17,13 +17,42 @@
             text-align: center;
         }
     </style>
+
+<script>
+ async function shortenUrl() {
+        const longUrl = document.getElementById("longUrl").value;
+        try{
+        const response = await fetch("handler", {
+            method: "POST",
+            body: JSON.stringify({longUrl})
+        });
+
+        const data = await response.json();
+
+    if (response.ok) {
+        const shortUrl = data.short_url;
+        document.getElementById('shortened-url').href = shortUrl;
+        document.getElementById('shortened-url').innerText = shortUrl;
+    
+    }else{
+        throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    } catch (error) {
+                console.error('Error shortening URL:', error);
+            }
+
+    }
+
+    
+</script>
 </head>
 <body>
-    <form class="container">
-        <label for="url">Enter URL:</label>
-        <input type="text" id="url" name="url">
-        <button type="submit">Shorten</button>
-    </form>
-    <p>Shortened URL: <span id="shortened-url"></span></p>
+   
+        <label for="longUrl">Enter URL:</label>
+        <input type="text" id="longUrl" name="longUrl">
+        <br/>
+        <button onclick="shortenUrl()" >Shorten</button>
+    <p>Shortened URL: <a id="shortened-url" target="_blank"></a></p>
 </body>
 </html>
