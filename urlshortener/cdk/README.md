@@ -1,12 +1,22 @@
-# Welcome to your CDK Java project!
+# Shortfy - AWS CDK Infrastructure
 
-This is a blank project for CDK development with Java.
+This AWS CDK project defines the infrastructure for Shortfy, a serverless URL shortener.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## 🚀 Deploying the Stack
 
-It is a [Maven](https://maven.apache.org/) based project, so you can open this project with any Maven compatible Java IDE to build and run tests.
+Ensure you have AWS CDK installed and run:
 
-## Useful commands
+```bash
+cdk bootstrap
+cdk synth
+cdk deploy
+```
+
+## 🛠️ Customizing the Stack
+
+* Modify the `src/main/java/com/myorg/ShortifyAppStack.java` file to adjust configurations.
+
+## 📝 Useful commands
 
  * `mvn package`     compile and run tests
  * `cdk ls`          list all stacks in the app
@@ -14,5 +24,14 @@ It is a [Maven](https://maven.apache.org/) based project, so you can open this p
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
+ * `cdk destroy`     destroy the resources created by CDK app
 
-Enjoy!
+📌 Notes
+
+* It is a [Maven](https://maven.apache.org/) based project, so you can open this project with any Maven-compatible Java IDE to build and run tests.
+
+* Ensure IAM permissions are correctly set before deploying.
+
+* Configure your AWS CLI with the necessary credentials.
+
+Let me know if you’d like any refinements! 🚀
