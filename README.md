@@ -1,50 +1,46 @@
-# Shortfy - Serverless URL Shortener
+# Shortify - AWS URL Shortener
 
-Shortfy is a serverless URL shortener built using AWS services for high availability, low latency, and cost efficiency.
+Shortify is a high-performance URL shortener built on AWS with Java.
 
-## 🚀 Features
+## Features
 
-* Shorten URLs via a simple API.
+- 🚀 Serverless architecture
+- ⚡ Sub-millisecond redirects with Redis caching
+- 🧠 Smart caching: Automatic Redis population with 1-hour TTL on cache misses
+- 🔒 Secure VPC-hosted services
+- 📊 SHA-256 + Base62 URL hashing
+- 🏗️ Infrastructure as Code with AWS CDK
 
-* Retrieve long URLs using a short code with automatic redirection.
+## Architecture
 
-* Fast lookups with ElastiCache (Redis) caching.
-
-* Persistent storage using DynamoDB.
-
-* Serverless and cost-efficient, powered by AWS Lambda.
-
-## 🏗️ Architecture
-
-* **API Gateway** – Exposes REST API.
-
-* **Lambda** – Business logic for shortening and retrieving URLs.
-
-* **DynamoDB** – Stores short and long URL mappings.
-
-* **Redis (ElastiCache)** – Caches mappings for faster lookups.
-
-* **S3** – Hosts the web frontend.
-
-* **AWS CDK** – Infrastructure as Code.
-
-## ⚡ How It Works
-
-* **Shorten a URL** – Send a POST request to /handler with a long URL.
-
-* **Retrieve a URL** – Send a GET request with the shortcode.
-
-* **Performance Boost** – DynamoDB is the source of truth, and Redis caches recent lookups for a 1-hour TTL.
-
-## 🛠️ Deployment
-
-Deploy the full infrastructure using AWS CDK:
-```bash
-cd urlshortener
-cd cdk
-cdk bootstrap
-cdk synth
-cdk deploy
-```
-For more details on deployment, have a look at the **README file in CDK**.
 ![Shortfy diagram](https://github.com/user-attachments/assets/b1f48094-af92-4c56-b9a8-68166ec30a98)
+
+1. **Frontend**: Static HTML hosted on S3
+2. **API Layer**: API Gateway routes to Lambda
+3. **Caching**: Redis (ElastiCache) for fast lookups
+4. **Storage**: DynamoDB for persistent URL mapping
+5. **Networking**: VPC with private subnets and endpoints
+
+## Deployment
+
+### Prerequisites
+- AWS account
+- AWS CLI configured
+- Java JDK 17+
+- Maven
+- AWS CDK
+
+### Steps
+1. Clone the repository
+2. Build the project: `mvn package`
+3. Deploy with CDK: `cdk deploy`
+4. Access the application at the provided API Gateway URL
+
+For more details on CDK deployment, look at the **README file in CDK**.
+
+## Usage
+- POST `/handler` with `{"longUrl": "https://example.com"}` to create a short URL
+- GET `/{shortCode}` to redirect to original URL
+
+## Contributing
+Pull requests are welcome! Please open an issue first to discuss changes.
