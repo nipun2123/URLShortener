@@ -1,20 +1,50 @@
-# Shortfy - AWS CDK Infrastructure
+# Shortify CDK Infrastructure
 
-This AWS CDK project defines the infrastructure for Shortfy, a serverless URL shortener.
+This directory contains the AWS CDK (Java) code to deploy the Shortify URL shortener infrastructure.
 
-## 🚀 Deploying the Stack
+## Stack Components
 
-Ensure you have AWS CDK installed and run:
+1. **S3 Bucket**: Hosts static website (index.html)
+2. **API Gateway**: Routes requests to Lambda or S3
+3. **Lambda Function**: Java handler for URL shortening/redirects
+4. **DynamoDB**: Stores short URL mappings
+5. **ElastiCache Redis**: Caches frequent URL lookups
+6. **VPC**: Private networking for Lambda and Redis
+7. **VPC Endpoints**: Secure access to DynamoDB
 
-```bash
-cdk bootstrap
-cdk synth
-cdk deploy
-```
+## Deployment
+
+1. Install dependencies:
+   ```bash
+   npm install -g aws-cdk
+   mvn install
+   ```
+2. Build the Lambda package:
+   ```bash
+   mvn package
+    ```
+3. Deploy the stack:
+   ```bash
+   cdk bootstrap
+   cdk synth
+   cdk deploy
+   ```
+
+## 🛠️ Configuration
+
+- Environment variables in ShortifyAppStack.java:
+- DYNAMODB_TABLE: DynamoDB table name
+- REDIS_ENDPOINT: Redis cluster endpoint
+- REDIS_PORT: Redis port
 
 ## 🛠️ Customizing the Stack
 
 * Modify the `src/main/java/com/myorg/ShortifyAppStack.java` file to adjust configurations.
+
+## 🧹Clean Up
+   ```bash
+     cdk deploy
+   ```
 
 ## 📝 Useful commands
 
