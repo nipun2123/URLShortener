@@ -40,6 +40,7 @@ public class UrlShortenerHandler implements RequestHandler<Map<String,Object>, O
         // Get the http method of request
         String httpMethod = (String) event.get("httpMethod");
         Map<String, Object> response = new HashMap<>();
+        
 
         if (httpMethod.equalsIgnoreCase("post")) {
 
